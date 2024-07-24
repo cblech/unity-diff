@@ -17,6 +17,18 @@
         "command": "unity-diff.helloWorld",
         "title": "Hello World"
       }
+    ],
+    "customEditors": [
+      {
+        "viewType": "unity-diff.unityScene",
+        "displayName": "Unity Scene",
+        "selector": [
+          {
+            "filenamePattern": "*.unity"
+          }
+        ],
+        "priority": "default"
+      }
     ]
   },
   "scripts": {

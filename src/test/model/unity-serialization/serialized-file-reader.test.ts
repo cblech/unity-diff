@@ -9,16 +9,16 @@ suite('Serialized File Reader Suite', () => {
 
 	let testDataPath = __dirname + '/test-data';
 
-	test('Deserialization Test', () => {
-		let reader = new SerializedUnityFileReader(testDataPath + '/DefaultScene.unity');
+	test('Deserialization Test', async () => {
+		let reader = new SerializedUnityFileReader(vscode.Uri.file(testDataPath + '/DefaultScene.unity') );
 		let file = reader.read();
 
 		assert.notEqual(file, null);
 	});
 
-	test('Parenting scene hierarchy test', () => {
-		let reader = new SerializedUnityFileReader(testDataPath + '/ParentingScene.unity');
-		let file = reader.read();
+	test('Parenting scene hierarchy test', async () => {
+		let reader = new SerializedUnityFileReader(vscode.Uri.file(testDataPath + '/ParentingScene.unity'));
+		let file = await reader.read();
 
 		assert.notEqual(file, null);
 		assert.notEqual(file.hierarchy, null);
@@ -65,9 +65,9 @@ suite('Serialized File Reader Suite', () => {
 		assert.equal(file.hierarchy.rootGameObjects[1].children[0].children[0].getName(), "Child 2 - 1 - 1");
 	});
 
-	test('Parenting scene hierarchy test without SceneRoots', () => {
-		let reader = new SerializedUnityFileReader(testDataPath + '/ParentingSceneWithoutSceneRoots.unity');
-		let file = reader.read();
+	test('Parenting scene hierarchy test without SceneRoots', async () => {
+		let reader = new SerializedUnityFileReader(vscode.Uri.file(testDataPath + '/ParentingSceneWithoutSceneRoots.unity'));
+		let file = await reader.read();
 
 		assert.notEqual(file, null);
 		assert.notEqual(file.hierarchy, null);

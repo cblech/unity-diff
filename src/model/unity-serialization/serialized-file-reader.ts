@@ -1,19 +1,21 @@
 import SerializedUnityFile, { SerializedUnityFileComponent, SerializedUnityFileDocument, SerializedUnityFileDocumentType, SerializedUnityFileGameObject, SerializedUnityFileHierarchy } from './serialized-file';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
+import * as vscode from 'vscode';
 
 type GoIdHierarchy = { goId: string, children: GoIdHierarchy[] };
 
 export default class SerializedUnityFileReader {
-    private filePath: string;
+    private filePath: vscode.Uri;
 
-    constructor(filePath: string) {
+    constructor(filePath: vscode.Uri) {
         this.filePath = filePath;
     }
 
-    public read(): SerializedUnityFile {
+    public async read(): Promise<SerializedUnityFile> {
         // Read the file
-        let fileContents = fs.readFileSync(this.filePath, 'utf8');
+        let textDocument = await vscode.workspace.openTextDocument(this.filePath);
+        let fileContents = textDocument.getText();
 
         let yamlDocuments = yaml.parseAllDocuments(fileContents);
 
