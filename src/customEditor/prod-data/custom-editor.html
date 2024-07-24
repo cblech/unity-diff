@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src ${cspSource};'none'; font-src ${cspSource}; style-src ${cspSource};" />
+    <link rel="stylesheet" href="${styleUri}">
+    <link rel="stylesheet" href="${codiconsUri}">
+    <title>Unity Scene Editor</title>
+</head>
+
+<body>
+    <div id="main-container" class="main-container">
+        <div class="header">
+            <h1>Unity Scene</h1>
+        </div>
+
+        <div id="git-status-text" class="top-right git-color git-status-mini"></div>
+        <div class="tree-view">
+            <ul id="hierarchy"></ul>
+        </div>
+    </div>
+
+    <script src="${scriptUri}"></script>
+</body>
+
+</html>

@@ -5,6 +5,7 @@ import SerializedUnityFile from '../model/unity-serialization/serialized-file';
 export class UnitySceneDocument implements vscode.CustomDocument {
     uri: vscode.Uri;
     documentData: SerializedUnityFile;
+    
 
     dispose(): void {
         

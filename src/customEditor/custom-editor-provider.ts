@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { UnitySceneDocument } from './unity-scene-document';
 import { SerializedUnityFileGameObject } from '../model/unity-serialization/serialized-file';
 import * as git from '../interfaces/git-extension';
+import { AppContext } from '../interfaces/unity-diff-context';
+import { CustomEditorHtml } from './custom-editor-html';
 
 
 export default class CustomEditorProvider implements vscode.CustomEditorProvider<UnitySceneDocument> {
 
-    static register(context: vscode.ExtensionContext): { dispose(): any; } {
+    static register(context: AppContext): { dispose(): any; } {
         return vscode.window.registerCustomEditorProvider(
             "unity-diff.unityScene",
             new CustomEditorProvider(context),
@@ -16,7 +18,7 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
     }
 
     constructor(
-        private readonly _context: vscode.ExtensionContext
+        private readonly _context: AppContext
     ) { }
 
     onDidChangeCustomDocument:
@@ -52,17 +54,23 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
     }
 
     resolveCustomEditor(document: UnitySceneDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): Thenable<void> | void {
-        webviewPanel.webview.html = this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
-        webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");
+        var html = CustomEditorHtml.getHtml(document, webviewPanel, this._context);
+        webviewPanel.webview.options = { enableScripts: true };
+        webviewPanel.webview.html = html;
 
-        let gitExtension = vscode.extensions.getExtension('vscode.git')!.exports as git.GitExtension;
-        let gitApi = gitExtension.getAPI(1);
-        gitApi.toGitUri(document.uri, 'HEAD');
-        if(gitApi.getRepository(document.uri)?.state.mergeChanges.some(c => c.uri.fsPath === document.uri.fsPath)){
-            webviewPanel.webview.html += "<h1>File is in merge conflict</h1>";
-        }
-
-        console.log(vscode.window.tabGroups.activeTabGroup.activeTab?.input);
+        webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
+        // this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
+        //webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");
+        //
+        //if (this._context.gitWrapper.hasFileMergeConflict(document.uri)) {
+        //    webviewPanel.webview.html += "<h1>File is in merge conflict</h1>";
+        //}
+        //
+        //if(this._context.gitWrapper.hasFileChanges(document.uri)) {
+        //    webviewPanel.webview.html += "<h1>File has changes</h1>";
+        //}
+        //
+        //console.log(vscode.window.tabGroups.activeTabGroup.activeTab?.input);
     }
 
     makeHtmlForGameObjects(gameObjects: SerializedUnityFileGameObject[]): string {
