@@ -3,6 +3,18 @@
 (() => {
     let vscode = acquireVsCodeApi();
 
+    function sendMessage(message) {
+        vscode.postMessage(message);
+    }
+
+    function sendHierarchyFoldingMessage(fileId) {
+        sendMessage({
+            command: "fold-hierarchy",
+            fileId: fileId
+        });
+    }
+
+
     let mainContainer = document.getElementById("main-container");
     let gitStatusText = document.getElementById("git-status-text");
     let hierarchyContainer = document.getElementById("hierarchy");
@@ -34,14 +46,15 @@
 
     function fillHierarchy(hierarchy) {
         hierarchyContainer.innerHTML = gameObjectTreeRecursive(hierarchy.rootGameObjects);
-        addClickEventToHierarchy();
         setPaddingLeft();
+        addClickEventToHierarchy();
     }
+
+    let chevronRight = "\uEAB6";
+    let chevronDown = "\uEAB4";
 
     function gameObjectTreeRecursive(gameObjects, level = 0) {
         let result = "";
-        let chevronRight = "\uEAB6";
-        let chevronDown = "\uEAB4";
 
         for (let gameObject of gameObjects) {
             let chevron = "";
@@ -50,8 +63,8 @@
             }
 
             result += `
-            <li level=${level}>
-                <span class='codicon codicon-'>
+            <li level=${level} fileId="${gameObject.document.fileId}" childCount="${gameObject.children.length}">
+                <span class='tree-view-chevron codicon codicon-'>
                     ${chevron}
                 </span>
                 <span class="tree-view-text">
@@ -71,12 +84,11 @@
     function addClickEventToHierarchy() {
         let liElements = document.querySelectorAll("#hierarchy li");
         for (let liElement of liElements) {
-            liElement.addEventListener("click", () => {
-                let classes = ["opened", "closed", ""];
-                let currentClass = liElement.className;
-                let currentIndex = classes.indexOf(currentClass);
-                let nextIndex = (currentIndex + 1) % classes.length;
-                liElement.className = classes[nextIndex];
+            liElement.getElementsByClassName("tree-view-chevron")[0]?.addEventListener("click", () => {
+                sendHierarchyFoldingMessage(liElement.getAttribute("fileId"));
+            });
+
+            liElement.getElementsByClassName("tree-view-text")[0]?.addEventListener("click", () => {
             });
         }
     }
@@ -86,9 +98,28 @@
         let liElements = document.querySelectorAll("#hierarchy li");
         for (let liElement of liElements) {
             let level = liElement.getAttribute("level");
-            liElement.style.paddingLeft = `${(level * 10)+5}px`;
+            liElement.style.paddingLeft = `${(level * 10) + 5}px`;
         }
     }
+
+    function applyFolds(collapsed) {
+        let liElements = document.querySelectorAll("#hierarchy li");
+        for (let liElement of liElements) {
+            if(liElement.getAttribute("childCount") == 0) {
+                continue;
+            }
+
+            let fileId = liElement.getAttribute("fileId");
+            if (collapsed.includes(fileId)) {
+                liElement.classList.add("collapsed");
+                liElement.getElementsByClassName("tree-view-chevron")[0].textContent = chevronRight;
+            } else {
+                liElement.classList.remove("collapsed");
+                liElement.getElementsByClassName("tree-view-chevron")[0].textContent = chevronDown;
+            }
+        }
+    }
+
 
     // setup messages
     window.addEventListener("message", event => {
@@ -96,6 +127,9 @@
         switch (message.command) {
             case "fill-hierarchy":
                 fillHierarchy(message.hierarchy);
+                break;
+            case "apply-folds":
+                applyFolds(message.collapsed);
                 break;
         }
     });

@@ -97,7 +97,7 @@ Colors for list and trees like the File Explorer. An active list/tree has keyboa
     user-select: none;
 }
 
-.tree-view li.closed + ul {
+.tree-view li.collapsed + ul {
     display: none;
 }
 

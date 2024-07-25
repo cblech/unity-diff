@@ -58,7 +58,27 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
         webviewPanel.webview.options = { enableScripts: true };
         webviewPanel.webview.html = html;
 
-        webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
+        function postFillHierarchy() {
+            webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
+        }
+
+        function postApplyFolds(){
+            webviewPanel.webview.postMessage({command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed()});
+        }
+
+        webviewPanel.webview.onDidReceiveMessage((message) => {
+            console.log(message);
+            switch (message.command) {
+                case "fold-hierarchy":
+                    document.foldInfo.toggleFold(message.fileId);
+                    postApplyFolds();
+                    break;
+            }
+        });
+
+        postFillHierarchy();
+        postApplyFolds();
+
         // this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
         //webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");
         //
