@@ -37,21 +37,19 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
             let chevronElement = document.createElement("span");
             chevronElement.classList.add("tree-view-chevron", "codicon", "codicon-");
             chevronElement.textContent = chevron;
+            chevronElement.addEventListener("click", () => {
+                treeSetupNode.onClickChevron();
+            });
             liElement.appendChild(chevronElement);
 
             let textElement = document.createElement("span");
             textElement.classList.add("tree-view-text");
             textElement.textContent = treeSetupNode.name;
+            textElement.addEventListener("click", () => {
+                treeSetupNode.onClick();
+            });
             liElement.appendChild(textElement);
         }
-
-        liElement.getElementsByClassName("tree-view-chevron")[0].addEventListener("click", () => {
-            treeSetupNode.onClickChevron();
-        });
-
-        liElement.getElementsByClassName("tree-view-text")[0].addEventListener("click", () => {
-            treeSetupNode.onClick();
-        });
 
         parentElement.appendChild(liElement);
 
