@@ -54,7 +54,7 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
     }
 
     resolveCustomEditor(document: UnitySceneDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): Thenable<void> | void {
-        var html = CustomEditorHtml.getHtml(document, webviewPanel, this._context);
+        var html = CustomEditorHtml.getHtml(webviewPanel, this._context);
         webviewPanel.webview.options = { enableScripts: true };
         webviewPanel.webview.html = html;
 
