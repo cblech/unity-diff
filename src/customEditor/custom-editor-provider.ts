@@ -62,6 +62,10 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
             webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
         }
 
+        function postFillInspector(gameObject: SerializedUnityFileGameObject) {
+            webviewPanel.webview.postMessage({ command: "fill-inspector", gameObject: gameObject });
+        }
+
         function postApplyFolds(){
             webviewPanel.webview.postMessage({command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed()});
         }
@@ -78,6 +82,7 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
 
         postFillHierarchy();
         postApplyFolds();
+        postFillInspector(document.documentData.hierarchy.rootGameObjects[0]);
 
         // this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
         //webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");

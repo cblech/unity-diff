@@ -22,6 +22,7 @@
     let mainContainer = document.getElementById("main-container");
     let gitStatusText = document.getElementById("git-status-text");
     let hierarchyContainer = document.getElementById("hierarchy");
+    let inspectorContainer = document.getElementById("inspector");
 
     let gitStates = {
         none: {
@@ -108,6 +109,49 @@
         };
     }
 
+    /**
+     * 
+     * @param {SerializedUnityFileGameObject} gameObject 
+     */
+    function fillInspector(gameObject) {
+        let treeSetup = {
+            name: "Inspector",
+            id: "root",
+            children: gameObject.components.map(comp => {
+                return {
+                    name: Object.keys(comp.document.content)[0],
+                    id: comp.document.fileId,
+                    children: getProperties(comp.document.content, comp.document.fileId)
+                };
+            })
+        };
+
+        console.log(gameObject);
+        console.log(treeSetup);
+
+        createTreeView(inspectorContainer, treeSetup);
+    }
+
+    function getProperties(content, componentId) {
+        const propRootKey = Object.keys(content)[0];
+        const propRootValues = content[propRootKey];
+
+        const propKeys = Object.keys(propRootValues);
+
+        return propKeys.map(key => {
+            return {
+                name: key,
+                id:  componentId + "-" + key,
+                children: [
+                    {
+                        name: JSON.stringify(propRootValues[key]),
+                        id: componentId + "-" + key + "-value"
+                    }
+                ]
+            };
+        });
+    }
+
 
     // setup messages
     window.addEventListener("message", event => {
@@ -115,6 +159,12 @@
         switch (message.command) {
             case "fill-hierarchy":
                 fillHierarchy(message.hierarchy);
+                break;
+            case "fill-inspector":
+                fillInspector(message.gameObject);
+                break;
+            case "set-git-status":
+                setGitStatus(gitStates[message.state]);
                 break;
             case "apply-folds":
                 applyFolds(message.collapsed);

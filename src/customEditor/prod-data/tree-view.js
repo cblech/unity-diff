@@ -23,14 +23,14 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
 
     function treeViewRecursive(parentElement, treeSetupNode, level = 0) {
         let chevron = "";
-        if (treeSetupNode.children.length > 0) {
+        if ((treeSetupNode.children?.length ?? 0) > 0) {
             chevron = chevronDown;
         }
 
         let liElement = document.createElement("li");
         liElement.setAttribute("level", level);
         liElement.setAttribute("treeId", treeSetupNode.id);
-        liElement.setAttribute("childCount", treeSetupNode.children.length);
+        liElement.setAttribute("childCount", treeSetupNode.children?.length ?? 0);
         liElement.style.paddingLeft = `${(level * 10) + 5}px`;
 
         {
@@ -38,7 +38,7 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
             chevronElement.classList.add("tree-view-chevron", "codicon", "codicon-");
             chevronElement.textContent = chevron;
             chevronElement.addEventListener("click", () => {
-                treeSetupNode.onClickChevron();
+                if (treeSetupNode.onClickChevron) { treeSetupNode.onClickChevron(); }
             });
             liElement.appendChild(chevronElement);
 
@@ -46,14 +46,14 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
             textElement.classList.add("tree-view-text");
             textElement.textContent = treeSetupNode.name;
             textElement.addEventListener("click", () => {
-                treeSetupNode.onClick();
+                if (treeSetupNode.onClick) { treeSetupNode.onClick(); }
             });
             liElement.appendChild(textElement);
         }
 
         parentElement.appendChild(liElement);
 
-        if (treeSetupNode.children.length > 0) {
+        if (treeSetupNode.children?.length ?? 0 > 0) {
             let ulElement = document.createElement("ul");
             parentElement.appendChild(ulElement);
             for (let child of treeSetupNode.children) {
