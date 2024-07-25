@@ -71,6 +71,7 @@
                     ${gameObject.document.content.GameObject.m_Name}
                 </span>
             </li>`;
+            
             if (gameObject.children.length > 0) {
                 result += "<ul>";
                 result += gameObjectTreeRecursive(gameObject.children, level + 1);
@@ -105,7 +106,7 @@
     function applyFolds(collapsed) {
         let liElements = document.querySelectorAll("#hierarchy li");
         for (let liElement of liElements) {
-            if(liElement.getAttribute("childCount") == 0) {
+            if(liElement.getAttribute("childCount") === "0") {
                 continue;
             }
 

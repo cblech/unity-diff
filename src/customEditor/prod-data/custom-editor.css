@@ -18,10 +18,14 @@
     margin: 0;
     padding: 0;
     border-top: 3px solid transparent;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .header {
     padding: 0 25px;
+    flex-shrink: 0;
 }
 
 /*show in the very top right corner of the current parent div*/
@@ -48,7 +52,35 @@
 
 body{
     padding: 0;
+    overflow: hidden;
+    height: 100%;
 }
+
+html{
+    height: 100%;
+}
+
+
+/*make columns scroll by them selfs*/
+
+.collumns-container {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+    padding-bottom: 2px;
+}
+
+.collumn {
+    flex: 1;
+    overflow: auto;
+    border-right: 1px solid var(--vscode-editorWidget-border);
+    padding: 2px 0;
+}
+
+.collumn:last-child {
+    border-right: none;
+}
+
 
 /*
 Colors for list and trees like the File Explorer. An active list/tree has keyboard focus, an inactive does not.
@@ -113,10 +145,12 @@ Colors for list and trees like the File Explorer. An active list/tree has keyboa
 }
 
 .tree-view li .tree-view-text{
-    padding: 0 0 0 20px;
+    padding: 0 0 0 0px;
 }
 
 .tree-view .codicon {
-    display: block !important;
-    position: fixed;
+    transform: translateY(3px);
+    width: 22px;
 }
+
+
