@@ -8,6 +8,8 @@ export class CustomEditorHtml {
     static getHtml(document: UnitySceneDocument, context: vscode.WebviewPanel, extensionContext: AppContext):string {
         let scriptUri = context.webview.asWebviewUri(vscode.Uri.file(__dirname + "/prod-data/custom-editor.js"));
         let styleUri = context.webview.asWebviewUri(vscode.Uri.file(__dirname + "/prod-data/custom-editor.css"));
+        let treeScriptUri = context.webview.asWebviewUri(vscode.Uri.file(__dirname + "/prod-data/tree-view.js"));
+        let treeStyleUri = context.webview.asWebviewUri(vscode.Uri.file(__dirname + "/prod-data/tree-view.css"));
         const codiconsUri = context.webview.asWebviewUri(vscode.Uri.joinPath(extensionContext.extensionContext.extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
 
 
@@ -15,6 +17,8 @@ export class CustomEditorHtml {
             .replace(/\$\{cspSource\}/g, context.webview.cspSource)
             .replace(/\$\{scriptUri\}/g, scriptUri.toString())
             .replace(/\$\{codiconsUri\}/g, codiconsUri.toString())
+            .replace(/\$\{treeScriptUri\}/g, treeScriptUri.toString())
+            .replace(/\$\{treeStyleUri\}/g, treeStyleUri.toString())
             .replace(/\$\{styleUri\}/g, styleUri.toString());
         
         

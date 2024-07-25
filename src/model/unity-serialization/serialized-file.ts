@@ -52,11 +52,13 @@ export class SerializedUnityFileGameObject {
     public document: SerializedUnityFileDocument;
     public components: SerializedUnityFileComponent[];
     public children: SerializedUnityFileGameObject[];
+    public name: string;
 
     constructor(document: SerializedUnityFileDocument, components: SerializedUnityFileComponent[], children: SerializedUnityFileGameObject[]) {
         this.document = document;
         this.components = components;
         this.children = children;
+        this.name = document.content.GameObject.m_Name;
     }
 
     public getName(): string {

@@ -14,6 +14,10 @@
         });
     }
 
+    /**
+     * @type {(collapsed:string[])=>void} TreeNode
+     */
+    let applyFolds;
 
     let mainContainer = document.getElementById("main-container");
     let gitStatusText = document.getElementById("git-status-text");
@@ -44,81 +48,64 @@
         mainContainer.className = state.mainContainerClass;
     }
 
+    /**
+     * @typedef {Object} SerializedUnityFileDocument
+     * @property {number} type
+     * @property {string} text
+     * @property {any} content
+     * @property {number[]} range
+     * @property {string} fileId
+     */
+
+    /**
+     * @typedef {Object} SerializedUnityFileComponent
+     * @property {SerializedUnityFileDocument} document
+     */
+
+    /**
+     * @typedef {Object} SerializedUnityFileGameObject
+     * @property {SerializedUnityFileDocument} document
+     * @property {SerializedUnityFileComponent[]} components
+     * @property {SerializedUnityFileGameObject[]} children
+     * @property {string} name
+     */
+
+    /**
+     * @typedef {Object} Hierarchy
+     * @property {SerializedUnityFileGameObject[]} rootGameObjects
+     */
+
+    /**
+     * @param {Hierarchy} hierarchy 
+     */
     function fillHierarchy(hierarchy) {
-        hierarchyContainer.innerHTML = gameObjectTreeRecursive(hierarchy.rootGameObjects);
-        setPaddingLeft();
-        addClickEventToHierarchy();
+        /**@type {TreeNode} */
+        let treeSetup = {
+            id: "root",
+            name: "Hierarchy",
+            children: hierarchy.rootGameObjects.map(go => treeSetupRecursive(go))
+        };
+
+        let returns = createTreeView(hierarchyContainer, treeSetup);
+        console.log(returns);
+        applyFolds = returns.applyFolds;
     }
 
-    let chevronRight = "\uEAB6";
-    let chevronDown = "\uEAB4";
-
-    function gameObjectTreeRecursive(gameObjects, level = 0) {
-        let result = "";
-
-        for (let gameObject of gameObjects) {
-            let chevron = "";
-            if (gameObject.children.length > 0) {
-                chevron = chevronDown;
+    /**
+     * @param {SerializedUnityFileGameObject} gameObject 
+     * @returns {TreeNode}
+     */
+    function treeSetupRecursive(gameObject) {
+        let children = gameObject.children.map(child => treeSetupRecursive(child));
+        return {
+            name: gameObject.document.content.GameObject.m_Name,
+            id: gameObject.document.fileId,
+            children: children,
+            onClick: () => { console.log("clicked on " + gameObject.name); },
+            onClickChevron: () => {
+                sendHierarchyFoldingMessage(gameObject.document.fileId);
             }
-
-            result += `
-            <li level=${level} fileId="${gameObject.document.fileId}" childCount="${gameObject.children.length}">
-                <span class='tree-view-chevron codicon codicon-'>
-                    ${chevron}
-                </span>
-                <span class="tree-view-text">
-                    ${gameObject.document.content.GameObject.m_Name}
-                </span>
-            </li>`;
-            
-            if (gameObject.children.length > 0) {
-                result += "<ul>";
-                result += gameObjectTreeRecursive(gameObject.children, level + 1);
-                result += "</ul>";
-            }
-        }
-        return result;
-    }
-
-    // for all li elements, add click event to circle through classes, "open" -> "closed" -> "" -> "open" -> ...
-    function addClickEventToHierarchy() {
-        let liElements = document.querySelectorAll("#hierarchy li");
-        for (let liElement of liElements) {
-            liElement.getElementsByClassName("tree-view-chevron")[0]?.addEventListener("click", () => {
-                sendHierarchyFoldingMessage(liElement.getAttribute("fileId"));
-            });
-
-            liElement.getElementsByClassName("tree-view-text")[0]?.addEventListener("click", () => {
-            });
-        }
-    }
-
-    // for all li elements, apply the correct padding-left based on the level attribute
-    function setPaddingLeft() {
-        let liElements = document.querySelectorAll("#hierarchy li");
-        for (let liElement of liElements) {
-            let level = liElement.getAttribute("level");
-            liElement.style.paddingLeft = `${(level * 10) + 5}px`;
-        }
-    }
-
-    function applyFolds(collapsed) {
-        let liElements = document.querySelectorAll("#hierarchy li");
-        for (let liElement of liElements) {
-            if(liElement.getAttribute("childCount") === "0") {
-                continue;
-            }
-
-            let fileId = liElement.getAttribute("fileId");
-            if (collapsed.includes(fileId)) {
-                liElement.classList.add("collapsed");
-                liElement.getElementsByClassName("tree-view-chevron")[0].textContent = chevronRight;
-            } else {
-                liElement.classList.remove("collapsed");
-                liElement.getElementsByClassName("tree-view-chevron")[0].textContent = chevronDown;
-            }
-        }
+        };
     }
 
 

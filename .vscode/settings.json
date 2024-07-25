@@ -10,6 +10,7 @@
 	"typescript.tsc.autoDetect": "off",
 	"diffEditor.codeLens": true,
 	"cSpell.words": [
+		"codicon",
 		"codicons"
 	]
 }
