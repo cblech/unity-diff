@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { UnitySceneDocument } from './unity-scene-document';
-import { SerializedUnityFileGameObject } from '../model/unity-serialization/serialized-file';
+import { SerializedUnityFileDocumentType, SerializedUnityFileGameObject } from '../model/unity-serialization/serialized-file';
 import * as git from '../interfaces/git-extension';
 import { AppContext } from '../interfaces/unity-diff-context';
 import { CustomEditorHtml } from './custom-editor-html';
@@ -84,18 +84,53 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
                     let componentName = Object.keys(component.document.content)[0];
                     let componentContent = component.document.content[componentName];
 
-                    function makePropertiesRecursive(obj: any, indent:string = ""): Property[] {
+                    function makeReferenceProperty(key: string, value: { fileID: string }): string {
+                        if (!value || !value.fileID || value.fileID === "0") {
+                            return "None";
+                        }
+
+                        // find fileID
+                        let docByFileId = document.documentData.getDocumentByFileId(value.fileID);
+
+                        // is GameObject
+                        if(docByFileId?.type === SerializedUnityFileDocumentType.GameObject){
+                            return docByFileId.content["GameObject"]["m_Name"] + " (GameObject)";
+                        }
+
+                        // is component
+                        if(docByFileId?.type === SerializedUnityFileDocumentType.Component){
+                            let contentKey = Object.keys(docByFileId.content)[0];
+                            let componentGameObjectInfo = docByFileId.content[contentKey]["m_GameObject"];
+                            let parentGameObject = document.documentData.getDocumentByFileId(componentGameObjectInfo.fileID);
+                            let parentGoName = parentGameObject?.content["GameObject"]["m_Name"] ?? "Unknown GameObject";
+
+                            return contentKey + " (Component) on " + parentGoName;
+                        }
+
+                        return "Unknown reference";
+                    }
+
+                    function makePropertiesRecursive(obj: any, indent: string = ""): Property[] {
                         let properties: Property[] = [];
 
                         for (let key in obj) {
                             if (Array.isArray(obj[key])) {
                                 properties.push({ key: indent + key, value: "" });
                                 for (let innerKey of obj[key]) {
-                                    properties.push(...makePropertiesRecursive(innerKey, indent+"&ensp;|&ensp;"));
+                                    if (Object.keys(innerKey).includes("fileID")) {
+                                        properties.push({ key: "&ensp;|&ensp;", value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + makeReferenceProperty(key, innerKey) });
+                                    } else {
+                                        properties.push(...makePropertiesRecursive(innerKey, indent + "&ensp;|&ensp;"));
+                                    }
                                 }
                             } else if (typeof obj[key] === "object") {
-                                properties.push({ key: indent + key, value: "" });
-                                properties.push(...makePropertiesRecursive(obj[key], indent+"&emsp;"));
+                                if (Object.keys(obj[key]).includes("fileID")) {
+                                    properties.push({ key: indent + key, value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + makeReferenceProperty(key, obj[key]) });
+                                } else {
+                                    properties.push({ key: indent + key, value: "" });
+                                    properties.push(...makePropertiesRecursive(obj[key], indent + "&emsp;"));
+                                }
+
                             } else {
                                 properties.push({ key: indent + key, value: obj[key] });
                             }
