@@ -84,13 +84,18 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
                     let componentName = Object.keys(component.document.content)[0];
                     let componentContent = component.document.content[componentName];
 
-                    function makePropertiesRecursive(obj: any, level: number = 0): Property[] {
+                    function makePropertiesRecursive(obj: any, indent:string = ""): Property[] {
                         let properties: Property[] = [];
-                        let indent = "&emsp;".repeat(level);
+
                         for (let key in obj) {
-                            if (typeof obj[key] === "object") {
+                            if (Array.isArray(obj[key])) {
                                 properties.push({ key: indent + key, value: "" });
-                                properties.push(...makePropertiesRecursive(obj[key], level + 1));
+                                for (let innerKey of obj[key]) {
+                                    properties.push(...makePropertiesRecursive(innerKey, indent+"&ensp;|&ensp;"));
+                                }
+                            } else if (typeof obj[key] === "object") {
+                                properties.push({ key: indent + key, value: "" });
+                                properties.push(...makePropertiesRecursive(obj[key], indent+"&emsp;"));
                             } else {
                                 properties.push({ key: indent + key, value: obj[key] });
                             }
