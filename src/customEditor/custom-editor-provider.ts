@@ -62,12 +62,55 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
             webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
         }
 
-        function postFillInspector(gameObject: SerializedUnityFileGameObject) {
-            webviewPanel.webview.postMessage({ command: "fill-inspector", gameObject: gameObject });
+        interface Property {
+            key: string;
+            value: string;
         }
 
-        function postApplyFolds(){
-            webviewPanel.webview.postMessage({command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed()});
+        interface Block {
+            properties: Property[];
+            header: string;
+        }
+
+        interface InspectorContent {
+            blocks: Block[];
+        }
+
+        function postFillInspector(index: number) {
+            let gameObject = document.documentData.hierarchy.rootGameObjects[index];
+
+            let inspectorContent: InspectorContent = {
+                blocks: gameObject.components.map((component) => {
+                    let componentName = Object.keys(component.document.content)[0];
+                    let componentContent = component.document.content[componentName];
+
+                    function makePropertiesRecursive(obj: any, level: number = 0): Property[] {
+                        let properties: Property[] = [];
+                        let indent = "&emsp;".repeat(level);
+                        for (let key in obj) {
+                            if (typeof obj[key] === "object") {
+                                properties.push({ key: indent + key, value: "" });
+                                properties.push(...makePropertiesRecursive(obj[key], level + 1));
+                            } else {
+                                properties.push({ key: indent + key, value: obj[key] });
+                            }
+                        }
+                        return properties;
+                    }
+
+                    let block: Block = {
+                        properties: makePropertiesRecursive(componentContent), header: componentName
+                    };
+
+                    return block;
+                })
+            };
+
+            webviewPanel.webview.postMessage({ command: "fill-inspector", inspectorContent: inspectorContent });
+        }
+
+        function postApplyFolds() {
+            webviewPanel.webview.postMessage({ command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed() });
         }
 
         webviewPanel.webview.onDidReceiveMessage((message) => {
@@ -80,9 +123,11 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
             }
         });
 
+
+
         postFillHierarchy();
         postApplyFolds();
-        postFillInspector(document.documentData.hierarchy.rootGameObjects[0]);
+        postFillInspector(0);
 
         // this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
         //webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");

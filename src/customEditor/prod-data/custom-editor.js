@@ -111,25 +111,10 @@
 
     /**
      * 
-     * @param {SerializedUnityFileGameObject} gameObject 
+     * @param {InspectorContent} inspectorContent 
      */
-    function fillInspector(gameObject) {
-        let treeSetup = {
-            name: "Inspector",
-            id: "root",
-            children: gameObject.components.map(comp => {
-                return {
-                    name: Object.keys(comp.document.content)[0],
-                    id: comp.document.fileId,
-                    children: getProperties(comp.document.content, comp.document.fileId)
-                };
-            })
-        };
-
-        console.log(gameObject);
-        console.log(treeSetup);
-
-        createTreeView(inspectorContainer, treeSetup);
+    function fillInspector(inspectorContent) {
+        createInspector(inspectorContainer, inspectorContent);
     }
 
     function getProperties(content, componentId) {
@@ -161,7 +146,7 @@
                 fillHierarchy(message.hierarchy);
                 break;
             case "fill-inspector":
-                fillInspector(message.gameObject);
+                fillInspector(message.inspectorContent);
                 break;
             case "set-git-status":
                 setGitStatus(gitStates[message.state]);
