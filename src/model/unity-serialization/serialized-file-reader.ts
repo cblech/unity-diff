@@ -21,7 +21,28 @@ export default class SerializedUnityFileReader {
 
         let unityDocuments = yamlDocuments.map(yd => this.yamlToUnityDocument(fileContents, yd));
 
+        for (let unityDocument of unityDocuments) {
+            unityDocument.content = this.replaceTrueKeysRecursive(unityDocument.content);
+        }
+
         return new SerializedUnityFile(unityDocuments, this.buildHierarchy(unityDocuments));
+    }
+
+    private replaceTrueKeysRecursive(obj: { [key: string]: any }): { [key: string]: any } {
+        const newObj: { [key: string]: any } = {};
+    
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const newKey = key === "true" ? "y" : key;
+                if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+                    newObj[newKey] = this.replaceTrueKeysRecursive(obj[key]); // Recursively process nested objects
+                } else {
+                    newObj[newKey] = obj[key];
+                }
+            }
+        }
+    
+        return newObj;
     }
 
     private getTransformComponentDocuments(allDocuments: SerializedUnityFileDocument[]): SerializedUnityFileDocument[] {
