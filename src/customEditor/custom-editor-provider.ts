@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { UnitySceneDocument } from './unity-scene-document';
-import { SerializedUnityFileDocumentType, SerializedUnityFileGameObject } from '../model/unity-serialization/serialized-file';
+import { SerializedUnityFileDocumentType, SerializedUnityFileGameObject, SerializedUnityFileHierarchy } from '../model/unity-serialization/serialized-file';
 import * as git from '../interfaces/git-extension';
 import { AppContext } from '../interfaces/unity-diff-context';
 import { CustomEditorHtml } from './custom-editor-html';
@@ -54,12 +54,20 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
     }
 
     resolveCustomEditor(document: UnitySceneDocument, webviewPanel: vscode.WebviewPanel, token: vscode.CancellationToken): Thenable<void> | void {
+        function postMessage(message:
+            { command: "fill-hierarchy", hierarchy: SerializedUnityFileHierarchy } |
+            { command: "fill-inspector", inspectorContent: InspectorContent } |
+            { command: "set-selection", fileId: string } |
+            { command: "apply-folds", collapsed: string[] }) {
+            webviewPanel.webview.postMessage(message);
+        }
+
         var html = CustomEditorHtml.getHtml(webviewPanel, this._context);
         webviewPanel.webview.options = { enableScripts: true };
         webviewPanel.webview.html = html;
 
         function postFillHierarchy() {
-            webviewPanel.webview.postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
+            postMessage({ command: "fill-hierarchy", hierarchy: document.documentData.hierarchy });
         }
 
         interface Property {
@@ -77,91 +85,120 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
             blocks: Block[];
         }
 
-        function postFillInspector(index: number) {
-            let gameObject = document.documentData.hierarchy.rootGameObjects[index];
+        function postFillInspector() {
+            let gameObject = document.documentData.getGameObjectByFileId(document.selectedInfo.getSelected());
+            // select any GameObject for now
+            //let gameObject = document.documentData.hierarchy.rootGameObjects[0];
 
-            let inspectorContent: InspectorContent = {
-                blocks: gameObject.components.map((component) => {
-                    let componentName = Object.keys(component.document.content)[0];
-                    let componentContent = component.document.content[componentName];
-
-                    function makeReferenceProperty(key: string, value: { fileID: string }): { value: string, link: { fileID: string } | null } {
-                        if (!value || !value.fileID || value.fileID === "0") {
-                            return { value: "None", link: null };
-                        }
-
-                        // find fileID
-                        let docByFileId = document.documentData.getDocumentByFileId(value.fileID);
-
-                        // is GameObject
-                        if (docByFileId?.type === SerializedUnityFileDocumentType.GameObject) {
-                            return { value: docByFileId.content["GameObject"]["m_Name"] + " (GameObject)", link: { fileID: value.fileID } };
-                        }
-
-                        // is component
-                        if (docByFileId?.type === SerializedUnityFileDocumentType.Component) {
-                            let contentKey = Object.keys(docByFileId.content)[0];
-                            let componentGameObjectInfo = docByFileId.content[contentKey]["m_GameObject"];
-                            let parentGameObject = document.documentData.getDocumentByFileId(componentGameObjectInfo.fileID);
-                            let parentGoName = parentGameObject?.content["GameObject"]["m_Name"] ?? "Unknown GameObject";
-
-                            return { value: contentKey + " on " + parentGoName, link: { fileID: value.fileID } };
-                        }
-
-                        return { value: "Unknown reference", link: { fileID: value.fileID } };
+            if (!gameObject) {
+                postMessage({
+                    command: "fill-inspector",
+                    inspectorContent: {
+                        blocks: [
+                            {
+                                header: "No GameObject selected",
+                                properties: []
+                            }
+                        ]
                     }
+                });
+                return;
+            }
 
-                    function makePropertiesRecursive(obj: any, indent: string = ""): Property[] {
-                        let properties: Property[] = [];
+            function makeReferenceProperty(key: string, value: { fileID: string }): { value: string, link: { fileID: string } | null } {
+                if (!value || !value.fileID || value.fileID === "0") {
+                    return { value: "None", link: null };
+                }
 
-                        for (let key in obj) {
-                            if (Array.isArray(obj[key])) {
-                                properties.push({ key: indent + key, value: "" });
-                                for (let innerKey of obj[key]) {
-                                    if (Object.keys(innerKey).includes("fileID")) {
-                                        let referenceProperty = makeReferenceProperty(key, innerKey);
-                                        properties.push({
-                                            key: indent + "&ensp;|&ensp;",
-                                            value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
-                                            link: referenceProperty.link
-                                        });
-                                    } else {
-                                        properties.push(...makePropertiesRecursive(innerKey, indent + "&ensp;|&ensp;"));
-                                    }
-                                }
-                            } else if (typeof obj[key] === "object") {
-                                if (Object.keys(obj[key]).includes("fileID")) {
-                                    let referenceProperty = makeReferenceProperty(key, obj[key]);
-                                    properties.push({
-                                        key: indent + key,
-                                        value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
-                                        link: referenceProperty.link
-                                    });
-                                } else {
-                                    properties.push({ key: indent + key, value: "" });
-                                    properties.push(...makePropertiesRecursive(obj[key], indent + "&emsp;"));
-                                }
+                // find fileID
+                let docByFileId = document.documentData.getDocumentByFileId(value.fileID);
 
+                // is GameObject
+                if (docByFileId?.type === SerializedUnityFileDocumentType.GameObject) {
+                    return { value: docByFileId.content["GameObject"]["m_Name"] + " (GameObject)", link: { fileID: value.fileID } };
+                }
+
+                // is component
+                if (docByFileId?.type === SerializedUnityFileDocumentType.Component) {
+                    let contentKey = Object.keys(docByFileId.content)[0];
+                    let componentGameObjectInfo = docByFileId.content[contentKey]["m_GameObject"];
+                    let parentGameObject = document.documentData.getDocumentByFileId(componentGameObjectInfo.fileID);
+                    let parentGoName = parentGameObject?.content["GameObject"]["m_Name"] ?? "Unknown GameObject";
+
+                    return { value: contentKey + " on " + parentGoName, link: { fileID: value.fileID } };
+                }
+
+                return { value: "Unknown reference", link: { fileID: value.fileID } };
+            }
+
+            function makePropertiesRecursive(obj: any, indent: string = ""): Property[] {
+                let properties: Property[] = [];
+
+                for (let key in obj) {
+                    if (Array.isArray(obj[key])) {
+                        properties.push({ key: indent + key, value: "Array (" + obj[key].length + ")" });
+                        for (let innerKey of obj[key]) {
+                            if (Object.keys(innerKey).includes("fileID")) {
+                                let referenceProperty = makeReferenceProperty(key, innerKey);
+                                properties.push({
+                                    key: indent + "&ensp;|&ensp;",
+                                    value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
+                                    link: referenceProperty.link
+                                });
                             } else {
-                                properties.push({ key: indent + key, value: obj[key] });
+                                properties.push(...makePropertiesRecursive(innerKey, indent + "&ensp;|&ensp;"));
                             }
                         }
-                        return properties;
+                    } else if (typeof obj[key] === "object") {
+                        if (Object.keys(obj[key]).includes("fileID")) {
+                            let referenceProperty = makeReferenceProperty(key, obj[key]);
+                            properties.push({
+                                key: indent + key,
+                                value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
+                                link: referenceProperty.link
+                            });
+                        } else {
+                            properties.push({ key: indent + key, value: "" });
+                            properties.push(...makePropertiesRecursive(obj[key], indent + "&emsp;"));
+                        }
+
+                    } else {
+                        properties.push({ key: indent + key, value: obj[key] });
                     }
+                }
+                return properties;
+            }
 
-                    let block: Block = {
-                        properties: makePropertiesRecursive(componentContent), header: componentName
-                    };
-
-                    return block;
-                })
+            let gameObjectBlock: Block = {
+                properties: makePropertiesRecursive(gameObject.document.content.GameObject),
+                header: gameObject.getName() + " (GameObject)"
             };
 
-            webviewPanel.webview.postMessage({ command: "fill-inspector", inspectorContent: inspectorContent });
+            let componentBlocks = gameObject.components.map((component) => {
+                let componentName = Object.keys(component.document.content)[0];
+                let componentContent = component.document.content[componentName];
+
+                let block: Block = {
+                    properties: makePropertiesRecursive(componentContent), header: componentName
+                };
+
+                return block;
+            });
+
+
+            let inspectorContent: InspectorContent = {
+                blocks: [gameObjectBlock, ...componentBlocks]
+            };
+
+            postMessage({ command: "fill-inspector", inspectorContent: inspectorContent });
+        }
+
+        function postSetSelection() {
+            postMessage({ command: "set-selection", fileId: document.selectedInfo.getSelected() });
         }
 
         function postApplyFolds() {
-            webviewPanel.webview.postMessage({ command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed() });
+            postMessage({ command: "apply-folds", collapsed: document.foldInfo.getAllCollapsed() });
         }
 
         webviewPanel.webview.onDidReceiveMessage((message) => {
@@ -171,6 +208,12 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
                     document.foldInfo.toggleFold(message.fileId);
                     postApplyFolds();
                     break;
+                case "select-game-object":
+                    let fileId = message.fileId;
+                    document.selectedInfo.setSelected(fileId);
+                    postFillInspector();
+                    postSetSelection();
+                    break;
             }
         });
 
@@ -178,7 +221,7 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
 
         postFillHierarchy();
         postApplyFolds();
-        postFillInspector(0);
+        postFillInspector();
 
         // this.makeHtmlForGameObjects(document.documentData.hierarchy.rootGameObjects);
         //webviewPanel.webview.html += JSON.stringify(document.uri, null, "  ");

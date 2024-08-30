@@ -9,6 +9,10 @@
 
 */
 
+.inspector-collumn{
+    flex:2;
+}
+
 .inspector-link{
     text-decoration: none;
     border: 1px solid var(--vscode-textSeparator-foreground);
@@ -18,4 +22,18 @@
 .inspector-link:hover{
     background-color: var(--vscode-list-hoverBackground);
     color: var(--vscode-list-hoverForeground);
+}
+
+.inspector-block{
+    border: 1px solid var(--vscode-textSeparator-foreground);
+    border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+    padding-left: 10px;
+    margin-left: 10px;
+    margin-bottom: 20px;
+}
+
+.inspector-block-header{
+    margin-top: 5px;
 }

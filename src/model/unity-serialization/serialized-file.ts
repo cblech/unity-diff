@@ -16,6 +16,26 @@ export default class SerializedUnityFile {
     public getDocumentByFileId(fileId: string | number): SerializedUnityFileDocument | null {
         return this.documents.find(d => d.fileId === fileId + '') ?? null;
     }
+
+    public getGameObjectByFileId(fileId: string | number): SerializedUnityFileGameObject | null {
+        // find recursively in hierarchy
+        return SerializedUnityFile.getGameObjectByFileIdRecursive(fileId, this.hierarchy.rootGameObjects);
+    }
+
+    private static getGameObjectByFileIdRecursive(fileId: string | number, gameObjects: SerializedUnityFileGameObject[]): SerializedUnityFileGameObject | null {
+        for (let i = 0; i < gameObjects.length; i++) {
+            if (gameObjects[i].document.fileId === fileId + '') {
+                return gameObjects[i];
+            }
+
+            let child = this.getGameObjectByFileIdRecursive(fileId, gameObjects[i].children);
+            if (child) {
+                return child;
+            }
+        }
+
+        return null;
+    }
 }
 
 export enum SerializedUnityFileDocumentType {

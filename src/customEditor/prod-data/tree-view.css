@@ -70,3 +70,13 @@ Colors for list and trees like the File Explorer. An active list/tree has keyboa
     width: 22px;
 }
 
+.tree-view .selected{
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+}
+
+.tree-view li:hover.selected {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+}
+

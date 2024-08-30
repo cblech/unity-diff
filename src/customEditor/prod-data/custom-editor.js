@@ -14,10 +14,22 @@
         });
     }
 
+    function sendGameObjectSelectedMessage(fileId) {
+        sendMessage({
+            command: "select-game-object",
+            fileId: fileId
+        });
+    }
+
     /**
      * @type {(collapsed:string[])=>void} TreeNode
      */
     let applyFolds;
+
+    /**
+     * @type {(fileId:string)=>void}
+     */
+    let setSelection;
 
     let mainContainer = document.getElementById("main-container");
     let gitStatusText = document.getElementById("git-status-text");
@@ -90,6 +102,7 @@
         let returns = createTreeView(hierarchyContainer, treeSetup);
         console.log(returns);
         applyFolds = returns.applyFolds;
+        setSelection = returns.setSelection;
     }
 
     /**
@@ -102,7 +115,9 @@
             name: gameObject.document.content.GameObject.m_Name,
             id: gameObject.document.fileId,
             children: children,
-            onClick: () => { console.log("clicked on " + gameObject.name); },
+            onClick: () => {
+                sendGameObjectSelectedMessage(gameObject.document.fileId);
+            },
             onClickChevron: () => {
                 sendHierarchyFoldingMessage(gameObject.document.fileId);
             }
@@ -126,7 +141,7 @@
         return propKeys.map(key => {
             return {
                 name: key,
-                id:  componentId + "-" + key,
+                id: componentId + "-" + key,
                 children: [
                     {
                         name: JSON.stringify(propRootValues[key]),
@@ -153,6 +168,9 @@
                 break;
             case "apply-folds":
                 applyFolds(message.collapsed);
+                break;
+            case "set-selection":
+                setSelection(message.fileId);
                 break;
         }
     });

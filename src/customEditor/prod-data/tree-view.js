@@ -6,7 +6,7 @@
 /**
  * @param {HTMLElement} hierarchyContainer
  * @param {TreeNode} treeSetup
- * @returns {{applyFolds: (collapsed:string[])=>void}} 
+ * @returns {{applyFolds: (collapsed:string[])=>void, setSelection: (fileId:string)=>void}} 
  */
 function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) {
     let treeView = "";
@@ -32,12 +32,16 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
         liElement.setAttribute("treeId", treeSetupNode.id);
         liElement.setAttribute("childCount", treeSetupNode.children?.length ?? 0);
         liElement.style.paddingLeft = `${(level * 10) + 5}px`;
+        liElement.addEventListener("click", () => {
+            if (treeSetupNode.onClick) { treeSetupNode.onClick(); }
+        });
 
         {
             let chevronElement = document.createElement("span");
             chevronElement.classList.add("tree-view-chevron", "codicon", "codicon-");
             chevronElement.textContent = chevron;
-            chevronElement.addEventListener("click", () => {
+            chevronElement.addEventListener("click", (event) => {
+                event.stopPropagation();
                 if (treeSetupNode.onClickChevron) { treeSetupNode.onClickChevron(); }
             });
             liElement.appendChild(chevronElement);
@@ -45,9 +49,7 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
             let textElement = document.createElement("span");
             textElement.classList.add("tree-view-text");
             textElement.textContent = treeSetupNode.name;
-            textElement.addEventListener("click", () => {
-                if (treeSetupNode.onClick) { treeSetupNode.onClick(); }
-            });
+
             liElement.appendChild(textElement);
         }
 
@@ -90,8 +92,20 @@ function createTreeView(hierarchyContainer, treeSetup, ignoreFirstLayer = true) 
         }
     }
 
+    function setSelection(fileId) {
+        let liElements = document.querySelectorAll("#hierarchy li");
+        for (let liElement of liElements) {
+            if (liElement.getAttribute("treeId") === fileId) {
+                liElement.classList.add("selected");
+            } else {
+                liElement.classList.remove("selected");
+            }
+        }
+    }
+
 
     return {
-        applyFolds
+        applyFolds,
+        setSelection
     };
 }

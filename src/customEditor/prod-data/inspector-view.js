@@ -22,14 +22,16 @@
  */
 
 function createInspector(hierarchyContainer, inspectorContent) {
+    hierarchyContainer.innerHTML = "";
 
     for (const block of inspectorContent.blocks) {
 
         let rootElement = document.createElement("div");
-        rootElement.classList.add("inspector-component");
+        rootElement.classList.add("inspector-block");
         hierarchyContainer.appendChild(rootElement);
 
         let headerElement = document.createElement("h3");
+        headerElement.classList.add("inspector-block-header");
         headerElement.innerHTML = block.header;
         rootElement.appendChild(headerElement);
 
