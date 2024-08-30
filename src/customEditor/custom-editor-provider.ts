@@ -65,6 +65,7 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
         interface Property {
             key: string;
             value: string;
+            link?: { fileID: string } | null;
         }
 
         interface Block {
@@ -84,30 +85,30 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
                     let componentName = Object.keys(component.document.content)[0];
                     let componentContent = component.document.content[componentName];
 
-                    function makeReferenceProperty(key: string, value: { fileID: string }): string {
+                    function makeReferenceProperty(key: string, value: { fileID: string }): { value: string, link: { fileID: string } | null } {
                         if (!value || !value.fileID || value.fileID === "0") {
-                            return "None";
+                            return { value: "None", link: null };
                         }
 
                         // find fileID
                         let docByFileId = document.documentData.getDocumentByFileId(value.fileID);
 
                         // is GameObject
-                        if(docByFileId?.type === SerializedUnityFileDocumentType.GameObject){
-                            return docByFileId.content["GameObject"]["m_Name"] + " (GameObject)";
+                        if (docByFileId?.type === SerializedUnityFileDocumentType.GameObject) {
+                            return { value: docByFileId.content["GameObject"]["m_Name"] + " (GameObject)", link: { fileID: value.fileID } };
                         }
 
                         // is component
-                        if(docByFileId?.type === SerializedUnityFileDocumentType.Component){
+                        if (docByFileId?.type === SerializedUnityFileDocumentType.Component) {
                             let contentKey = Object.keys(docByFileId.content)[0];
                             let componentGameObjectInfo = docByFileId.content[contentKey]["m_GameObject"];
                             let parentGameObject = document.documentData.getDocumentByFileId(componentGameObjectInfo.fileID);
                             let parentGoName = parentGameObject?.content["GameObject"]["m_Name"] ?? "Unknown GameObject";
 
-                            return contentKey + " (Component) on " + parentGoName;
+                            return { value: contentKey + " on " + parentGoName, link: { fileID: value.fileID } };
                         }
 
-                        return "Unknown reference";
+                        return { value: "Unknown reference", link: { fileID: value.fileID } };
                     }
 
                     function makePropertiesRecursive(obj: any, indent: string = ""): Property[] {
@@ -118,14 +119,24 @@ export default class CustomEditorProvider implements vscode.CustomEditorProvider
                                 properties.push({ key: indent + key, value: "" });
                                 for (let innerKey of obj[key]) {
                                     if (Object.keys(innerKey).includes("fileID")) {
-                                        properties.push({ key: "&ensp;|&ensp;", value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + makeReferenceProperty(key, innerKey) });
+                                        let referenceProperty = makeReferenceProperty(key, innerKey);
+                                        properties.push({
+                                            key: indent + "&ensp;|&ensp;",
+                                            value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
+                                            link: referenceProperty.link
+                                        });
                                     } else {
                                         properties.push(...makePropertiesRecursive(innerKey, indent + "&ensp;|&ensp;"));
                                     }
                                 }
                             } else if (typeof obj[key] === "object") {
                                 if (Object.keys(obj[key]).includes("fileID")) {
-                                    properties.push({ key: indent + key, value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + makeReferenceProperty(key, obj[key]) });
+                                    let referenceProperty = makeReferenceProperty(key, obj[key]);
+                                    properties.push({
+                                        key: indent + key,
+                                        value: "<span class='inspector-external-symbol codicon codicon-link-external'></span> " + referenceProperty.value,
+                                        link: referenceProperty.link
+                                    });
                                 } else {
                                     properties.push({ key: indent + key, value: "" });
                                     properties.push(...makePropertiesRecursive(obj[key], indent + "&emsp;"));

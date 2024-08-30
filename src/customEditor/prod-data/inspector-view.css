@@ -1,3 +1,21 @@
 .inspector-external-symbol::before{
     font-size: 0.7em;
 }
+/*
+--vscode-list-hoverBackground
+--vscode-list-hoverForeground
+--vscode-list-activeSelectionBackground
+--vscode-list-activeSelectionForeground
+
+*/
+
+.inspector-link{
+    text-decoration: none;
+    border: 1px solid var(--vscode-textSeparator-foreground);
+    border-radius: 5px;
+}
+
+.inspector-link:hover{
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
+}

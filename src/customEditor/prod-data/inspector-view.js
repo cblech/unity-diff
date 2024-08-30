@@ -2,6 +2,7 @@
  * @typedef {Object} Property
  * @property {string} key
  * @property {string} value
+ * @property {{fileID: String}|null|undefined} link
  */
 
 /**
@@ -20,7 +21,7 @@
  * @param {InspectorContent} inspectorContent 
  */
 
-function createInspector(hierarchyContainer, inspectorContent){
+function createInspector(hierarchyContainer, inspectorContent) {
 
     for (const block of inspectorContent.blocks) {
 
@@ -46,6 +47,9 @@ function createInspector(hierarchyContainer, inspectorContent){
 
             let tdValueElement = document.createElement("td");
             tdValueElement.innerHTML = property.value;
+            if(property.link !== undefined){
+                tdValueElement.classList.add("inspector-link");
+            }
             trElement.appendChild(tdValueElement);
         }
     }
